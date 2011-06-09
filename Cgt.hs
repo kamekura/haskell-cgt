@@ -236,8 +236,6 @@ is_number g =
 -- or a game where both sets of options (Left and Right) are non-empty. 
 --
 all_small :: CG -> Bool
--- Line below generates warning ("Pattern match(es) are overlapped). Why?
--- all_small zero = True 
 all_small (CG ([], [])) = True
 all_small (CG (ls, rs)) = 
 	  (not $ null ls) && (not $ null rs) &&
