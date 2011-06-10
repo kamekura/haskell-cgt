@@ -3,10 +3,10 @@
 
 module Cgt ( CG, show ) where
 
-import Data.List (find, intercalate)
--- import Data.List
+-- import Data.List (find, intercalate)
+import Data.List
 
--- Combinatorial Games
+--  Combinatorial Games
 -- 
 -- Combinatorial games are games in which 2 players move alternately and
 -- the last player to move wins. By convention, the players are called Left and Right.
@@ -27,8 +27,8 @@ import Data.List (find, intercalate)
 -- first are positive (resp., negative).
 -- 
 -- In the game {0|0}, whoever moves first wins (because the next player will be left 
--- the game 0, that is, no moves). It is also called * ("star"). * is not a number, 
--- and is neither positive or negative, but neither is it equal to 0. It is incomparable
+-- with the game 0, that is, no moves). It is called * ("star") and is not a number. 
+-- Star is neither positive or negative, but neither is it equal to 0. It is incomparable
 -- with 0, so we say it is "confused" with 0. There are other games which are
 -- first-player wins, and they are all confused with 0.
 
@@ -38,16 +38,17 @@ import Data.List (find, intercalate)
 
 data CG  = CG ([CG], [CG])
 
--- at the moment this show is rather arbitrary, as it "pretty prints" 0 but
--- not other numbers or star or up.
+-- at the moment this show "pretty prints" 0 
+-- and star but not other numbers or "up" and "down".
 
 gshow :: CG -> String
-gshow (CG ([], [])) = "0"
-gshow (CG (left, right)) = 
-	"{" ++ leftList  ++ " | " ++ rightList ++ "}"
-	where leftList = lshow left
-	      rightList = lshow right
-	      lshow = intercalate ", " . map gshow
+gshow g
+	| g === zero = "0"
+	| g === star = "*"
+	| otherwise = gshow' g
+gshow' (CG (left, right)) = 
+	"{" ++ lshow left  ++ " | " ++ lshow right ++ "}"
+		where lshow = intercalate ", " . map gshow
 
 instance Show CG where show = gshow
 
@@ -99,10 +100,10 @@ g `minus` h = g `plus` (neg h)
 
 less_eq :: CG -> CG -> Bool
 g `less_eq` h = 
-	let CG (gl, gr) = g in
-	let CG (hl, hr) = h in	
-	  ( not $ any (h `less_eq`) gl ) &&
-	  ( not $ any (`less_eq` g) hr ) 
+	let CG (gl, gr) = g 
+	    CG (hl, hr) = h in
+	( not $ any (h `less_eq`) gl ) &&
+	( not $ any (`less_eq` g) hr ) 
 
 greater_eq :: CG -> CG -> Bool
 greater_eq g h = (h `less_eq` g)
@@ -122,6 +123,29 @@ greater g h = h `less` g
 confused :: CG -> CG -> Bool
 confused g h = (not (g `less_eq` h)) && (not (h `less_eq` g))
 
+{-
+identical :: CG -> CG -> Bool
+identical g h = 
+	length gl == length hl && length gr == length hr &&
+	(all $ uncurry identical $ zip gl hl) &&
+	(all $ uncurry identical $ zip gr hr)
+  	where gl = leftOptions g
+	      gr = rightOptions g
+	      hl = leftOptions h
+	      hr = rightOptions h 
+-}
+
+identical :: CG -> CG -> Bool
+identical g h = 
+	length gl == length hl && length gr == length hr &&
+	(and $ zipWith identical gl hl) &&
+	(and $ zipWith identical gr hr)
+  	where gl = leftOptions g
+	      gr = rightOptions g
+	      hl = leftOptions h
+	      hr = rightOptions h
+
+(===) = identical 
 
 ------- Canonical forms -------
 
