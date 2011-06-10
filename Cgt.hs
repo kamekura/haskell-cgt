@@ -3,7 +3,8 @@
 
 module Cgt ( CG, show ) where
 
-import List (find)
+import Data.List (find, intercalate)
+-- import Data.List
 
 -- Combinatorial Games
 -- 
@@ -39,10 +40,17 @@ data CG  = CG ([CG], [CG])
 
 -- at the moment this show is rather arbitrary, as it "pretty prints" 0 but
 -- not other numbers or star or up.
-instance Show CG where
-	show (CG ([], [])) = "0"
-	show (CG (left, right)) = "{" ++ concatMap show left ++ " | " 
-				       ++ concatMap show right ++ "}"
+
+gshow :: CG -> String
+gshow (CG ([], [])) = "0"
+gshow (CG (left, right)) = 
+	"{" ++ leftList  ++ " | " ++ rightList ++ "}"
+	where leftList = lshow left
+	      rightList = lshow right
+	      lshow = intercalate ", " . map gshow
+
+instance Show CG where show = gshow
+
 zero = CG ([], [])
 
 leftOptions :: CG -> [CG]
@@ -124,7 +132,7 @@ canonical g =
 	    rs = rightOptions g in
 	all canonical ls && all canonical rs &&  -- (i)
 	all_pairwise confused ls && all_pairwise confused rs &&   -- (ii)
-	reversible_left_options g == [] && reversible_right_options g == []  -- (iii)
+	null (reversible_left_options g) && null (reversible_right_options g)  -- (iii)
 --      a game g is in canonical form if
 --      (i) all options of g (=subgames of g) are in canonical form
 --      (ii) ls and rs are antichains or, equivalently, there are no dominated options
