@@ -6,35 +6,37 @@ module Cgt ( CG, show ) where
 -- import Data.List (find, intercalate)
 import Data.List
 
---  Combinatorial Games
--- 
--- Combinatorial games are games in which 2 players move alternately and
--- the last player to move wins. By convention, the players are called Left and Right.
---
--- A game is defined recursively as an ordered pair of sets of games.
--- Each set corresponds to the moves available to Left and Right.
--- These sets are called left options and right options of the game.
--- A game with left options set GL and right options set GR is denoted by:
---   g = {GL | GR}
--- Note that this representation does not specify whose turn it is.
+{-
+    Combinatorial Games
+   
+   Combinatorial games are games in which 2 players move alternately and
+   the last player to move wins. By convention, the players are called Left and Right.
 
--- If both sets are empty, the game is denoted by {|}, also known as "0".
--- By definition, whoever moves first in 0 loses (since there are no available moves).
---
--- The game {0|} is a win for Left and is called 1 (it corresponds to 1 move for Left
--- and none for Right). The game {|0} is a win for Right and is called -1. These games
--- are numbers. By convention, games which Left (resp., Right) can win no matter who moves 
--- first are positive (resp., negative).
--- 
--- In the game {0|0}, whoever moves first wins (because the next player will be left 
--- with the game 0, that is, no moves). It is called * ("star") and is not a number. 
--- Star is neither positive or negative, but neither is it equal to 0. It is incomparable
--- with 0, so we say it is "confused" with 0. There are other games which are
--- first-player wins, and they are all confused with 0.
+   A game is defined recursively as an ordered pair of sets of games.
+   Each set corresponds to the moves available to Left and Right.
+   These sets are called left options and right options of the game.
+   A game with left options set GL and right options set GR is denoted by:
+     g = {GL | GR}
+   Note that this representation does not specify whose turn it is.
 
--- This implementation is for short games (games with finitely many options).
--- For convenience, the sets of options are represented by Haskell lists instead of sets, 
--- though that could change in the future.
+   If both sets are empty, the game is denoted by {|}, also known as "0".
+   By definition, whoever moves first in 0 loses (since there are no available moves).
+
+   The game {0|} is a win for Left and is called 1 (it corresponds to 1 move for Left
+   and none for Right). The game {|0} is a win for Right and is called -1. These games
+   are numbers. By convention, games which Left (resp., Right) can win no matter who moves 
+   first are positive (resp., negative).
+   
+   In the game {0|0}, whoever moves first wins (because the next player will be left 
+   with the game 0, that is, no moves). It is called * ("star") and is not a number. 
+   Star is neither positive or negative, but neither is it equal to 0. It is incomparable
+   with 0, so we say it is "confused" with 0. There are other games which are
+   first-player wins, and they are all confused with 0.
+
+   This implementation is for short games (games with finitely many options).
+   For convenience, the sets of options are represented by Haskell lists instead of sets, 
+   though that could change in the future.
+-}
 
 data CG  = CG ([CG], [CG])
 
@@ -65,16 +67,17 @@ rightOptions (CG (_, right)) = right
 neg :: CG -> CG
 neg (CG (left, right)) = CG (map neg right, map neg left)
 
--- The sum of games G and H is a game. In the sum game, each player can select a component
--- (G or H) and make a move in the component. The other component remains unaltered.
--- The game ends when the player to move has no moves in either component.
--- Formally: if g = {GL, GR} and H = {HL, HR} then
---           g + h = {GL + h, g + HL | GR + h, g + HR}  
---                 = {GL1 + h, ..., GLn + h, g + HL1, ..., g + HLn | etc}
--- Note that g and h are games and GL, GR, HL, HR are sets of games.
---
--- canonicalize doesn't change the game value so is not necessary,
---  but it is convenient so that we don't end up with games with lots of unncessary options.
+{- The sum of games G and H is a game. In the sum game, each player can select a component
+   (G or H) and make a move in the component. The other component remains unaltered.
+   The game ends when the player to move has no moves in either component.
+   Formally: if g = {GL, GR} and H = {HL, HR} then
+             g + h = {GL + h, g + HL | GR + h, g + HR}  
+                   = {GL1 + h, ..., GLn + h, g + HL1, ..., g + HLn | etc}
+   Note that g and h are games and GL, GR, HL, HR are sets of games.
+   canonicalize doesn't change the game value so is not necessary,
+    but it is convenient so that we don't end up with games with lots of unncessary options.
+-}
+
 plus :: CG -> CG -> CG
 -- plus g Zero = g
 -- plus Zero h = h
@@ -123,17 +126,6 @@ greater g h = h `less` g
 confused :: CG -> CG -> Bool
 confused g h = (not (g `less_eq` h)) && (not (h `less_eq` g))
 
-{-
-identical :: CG -> CG -> Bool
-identical g h = 
-	length gl == length hl && length gr == length hr &&
-	(all $ uncurry identical $ zip gl hl) &&
-	(all $ uncurry identical $ zip gr hr)
-  	where gl = leftOptions g
-	      gr = rightOptions g
-	      hl = leftOptions h
-	      hr = rightOptions h 
--}
 
 identical :: CG -> CG -> Bool
 identical g h = 
@@ -146,6 +138,17 @@ identical g h =
 	      hr = rightOptions h
 
 (===) = identical 
+
+identical2 :: CG -> CG -> Bool
+identical2 g h = 
+	length gl == length hl && length gr == length hr &&
+	(all $ uncurry identical2 $ zip gl hl) &&
+	(all $ uncurry identical2 $ zip gr hr)
+  	where gl = leftOptions g
+	      gr = rightOptions g
+	      hl = leftOptions h
+	      hr = rightOptions h 
+
 
 ------- Canonical forms -------
 
@@ -262,11 +265,12 @@ is_number g =
 	  all is_number ls && all is_number rs &&
 	  all (uncurry less) [(gl, gr) | gl <- ls, gr <- rs]
 
--- Given a game g in canonical form, returns True if g is all-small.
--- A game is all-small if in every non-terminal position, 
--- both players have moves. In other words, every subgame is either 0
--- or a game where both sets of options (Left and Right) are non-empty. 
---
+{-
+   Given a game g in canonical form, returns True if g is all-small.
+   A game is all-small if in every non-terminal position, 
+   both players have moves. In other words, every subgame is either 0
+   or a game where both sets of options (Left and Right) are non-empty. 
+-}
 all_small :: CG -> Bool
 all_small (CG ([], [])) = True
 all_small (CG (ls, rs)) = 
