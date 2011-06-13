@@ -92,7 +92,7 @@ g `plus` h =
 
 g `minus` h = g `plus` (neg h)
 
-------- Ordering ---------
+--- Ordering ---
 
 -- `less_eq` is a partial order on games.
 -- G < 0 means G is good for Right (Right wins whoever plays first).
@@ -124,31 +124,27 @@ greater g h = h `less` g
 confused :: CG -> CG -> Bool
 confused g h = (not (g `less_eq` h)) && (not (h `less_eq` g))
 
--- Given games g and h, returns True if g and h are identical, i.e., have exactly the same form.
--- Note that, in general, we can have g=h but g and h not identical.
-identical :: CG -> CG -> Bool
-identical g h = 
-	length gl == length hl && length gr == length hr &&
-	(and $ zipWith identical gl hl) &&
-	(and $ zipWith identical gr hr)
-  	where gl = leftOptions g
-	      gr = rightOptions g
-	      hl = leftOptions h
-	      hr = rightOptions h
+uncomparable = confused
 
-(===) = identical 
 
-identical2 :: CG -> CG -> Bool
-identical2 g h = 
-	length gl == length hl && length gr == length hr &&
-	(all (uncurry identical2) $ zip gl hl) &&
-	(all (uncurry identical2) $ zip gr hr)
-  	where gl = leftOptions g
-	      gr = rightOptions g
-	      hl = leftOptions h
-	      hr = rightOptions h 
+compare_game :: CG -> CG -> String
+compare_game g h
+	| g `less` h = "<"
+	| g `greater` h = ">"
+	| g `confused` h = "||"	
+	| g `equals` h = "="
+	| otherwise = "can't happen"
 
-------- Canonical forms -------
+sign :: CG -> String
+sign g 
+	| g `less` zero = "-"
+	| g `greater` zero = "+"
+	| g `confused` zero = "||"	
+	| g `equals` zero = "0"
+	| otherwise = "can't happen"
+
+
+--- Canonical forms ---
 
 -- Given a game g, returns True if g is in canonical form.
 canonical :: CG -> Bool
@@ -232,21 +228,31 @@ right_reversible g gr =
 	any (`greater_eq` g) grl
 	where grl = rightOptions gr
 
-compare_game :: CG -> CG -> String
-compare_game g h
-	| g `less` h = "<"
-	| g `greater` h = ">"
-	| g `confused` h = "||"	
-	| g `equals` h = "="
-	| otherwise = "can't happen"
+-- Given games g and h, returns True if g and h are identical, i.e., have exactly the same form.
+-- Note that, in general, we can have g=h but g and h not identical.
+identical :: CG -> CG -> Bool
+identical g h = 
+	length gl == length hl && length gr == length hr &&
+	(and $ zipWith identical gl hl) &&
+	(and $ zipWith identical gr hr)
+  	where gl = leftOptions g
+	      gr = rightOptions g
+	      hl = leftOptions h
+	      hr = rightOptions h
 
-sign :: CG -> String
-sign g 
-	| g `less` zero = "-"
-	| g `greater` zero = "+"
-	| g `confused` zero = "||"	
-	| g `equals` zero = "0"
-	| otherwise = "can't happen"
+(===) = identical 
+
+identical2 :: CG -> CG -> Bool
+identical2 g h = 
+	length gl == length hl && length gr == length hr &&
+	(all (uncurry identical2) $ zip gl hl) &&
+	(all (uncurry identical2) $ zip gr hr)
+  	where gl = leftOptions g
+	      gr = rightOptions g
+	      hl = leftOptions h
+	      hr = rightOptions h 
+
+--- Classifications ---
 
 -- Given a game g, returns True if g is a number.
 -- g is a number if every left option is less than every right option.
@@ -273,6 +279,7 @@ all_small (CG (ls, rs)) =
 	  all all_small (ls) && all all_small (rs)
 
 --- Some simple games  ---
+
 -- these are in canonical form
 zero = CG ([], [])
 z = zero
