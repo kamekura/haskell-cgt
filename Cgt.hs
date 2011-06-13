@@ -7,6 +7,8 @@ module Cgt ( CG, show ) where
 import Data.List
 import Misc
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+
 {-
     Combinatorial Games
    
@@ -73,7 +75,7 @@ neg (CG (left, right)) = CG (map neg right, map neg left)
                    = {GL1 + h, ..., GLn + h, g + HL1, ..., g + HLn | etc}
    Note that g and h are games and GL, GR, HL, HR are sets of games.
    canonicalize doesn't change the game value so is not necessary,
-    but it is convenient so that we don't end up with games with lots of unncessary options.
+    but it is convenient so that we don't end up with games with lots of unnecessary options.
 -}
 
 plus :: CG -> CG -> CG
@@ -90,9 +92,10 @@ g `plus` h =
 -- (+) :: CG -> CG -> CG
 -- (+) = plus
 
-g `minus` h = g `plus` (neg h)
+g `minus` h = g `plus` neg h
 
---- Ordering ---
+
+---   Ordering ---
 
 -- `less_eq` is a partial order on games.
 -- G < 0 means G is good for Right (Right wins whoever plays first).
@@ -103,11 +106,11 @@ less_eq :: CG -> CG -> Bool
 g `less_eq` h = 
 	let CG (gl, gr) = g 
 	    CG (hl, hr) = h in
-	( not $ any (h `less_eq`) gl ) &&
-	( not $ any (`less_eq` g) hr ) 
+	not (any (h `less_eq`) gl) &&
+	not (any (`less_eq` g) hr)
 
 greater_eq :: CG -> CG -> Bool
-greater_eq g h = (h `less_eq` g)
+greater_eq g h = h `less_eq` g
 
 equals :: CG -> CG -> Bool
 equals g h = g `less_eq` h && h `less_eq` g 
@@ -116,16 +119,16 @@ instance Eq CG where
   g == h  = g `equals` h
 
 less :: CG -> CG -> Bool
-less g h = g `less_eq` h && (not $ g `equals` h)
+less g h = g `less_eq` h && not (g `equals` h)
+-- maybe better as { g `less_eq` h && not (h `less_eq` g) }
 
 greater :: CG -> CG -> Bool
 greater g h = h `less` g
 
 confused :: CG -> CG -> Bool
-confused g h = (not (g `less_eq` h)) && (not (h `less_eq` g))
+confused g h = not (g `less_eq` h) &&  not (h `less_eq` g)
 
 uncomparable = confused
-
 
 compare_game :: CG -> CG -> String
 compare_game g h
@@ -178,10 +181,10 @@ canonicalize g =
 del_dominated :: (CG -> CG -> Bool) -> [CG] -> [CG]
 del_dominated dom [] = []
 del_dominated dom (g:gs) =
-	if (any (`dom` g) gs)
+	if any (`dom` g) gs
 	then del_dominated dom gs
-	else [g] ++ del_dominated dom gs'
-	where gs' = filter (confused g) gs	
+	else g : del_dominated dom gs'
+          where gs' = filter (confused g) gs	
 -- in the final clause, using `confused` is inefficient since we already know
 -- that gls is not >= gl (or grs is not =< gr)
 
@@ -232,21 +235,23 @@ right_reversible g gr =
 -- Note that, in general, we can have g=h but g and h not identical.
 identical :: CG -> CG -> Bool
 identical g h = 
-	length gl == length hl && length gr == length hr &&
-	(and $ zipWith identical gl hl) &&
-	(and $ zipWith identical gr hr)
+	length gl == length hl && length gr == length hr
+	&& and (zipWith identical gl hl)
+	&& and (zipWith identical gr hr)
   	where gl = leftOptions g
 	      gr = rightOptions g
 	      hl = leftOptions h
 	      hr = rightOptions h
+-- This works because the current representation of CG is basically "unary". 
+-- It should be changed in case we change the represenation of CG to something more efficient.
 
 (===) = identical 
 
 identical2 :: CG -> CG -> Bool
 identical2 g h = 
-	length gl == length hl && length gr == length hr &&
-	(all (uncurry identical2) $ zip gl hl) &&
-	(all (uncurry identical2) $ zip gr hr)
+	length gl == length hl && length gr == length hr
+	&& all (uncurry identical2) (zip gl hl)
+	&& all (uncurry identical2) (zip gr hr)
   	where gl = leftOptions g
 	      gr = rightOptions g
 	      hl = leftOptions h
@@ -255,7 +260,7 @@ identical2 g h =
 --- Classifications ---
 
 -- Given a game g, returns True if g is a number.
--- g is a number if every left option is less than every right option.
+-- g is a number if every option is a number and every left option is less than every right option.
 is_number :: CG -> Bool
 is_number g =
 	let (CG (ls, rs)) = canonicalize g in
@@ -275,8 +280,8 @@ is_number g =
 all_small :: CG -> Bool
 all_small (CG ([], [])) = True
 all_small (CG (ls, rs)) = 
-	  (not $ null ls) && (not $ null rs) &&
-	  all all_small (ls) && all all_small (rs)
+	  not (null ls) && not (null rs) &&
+	  all all_small ls && all all_small rs
 
 --- Some simple games  ---
 
