@@ -247,6 +247,7 @@ identical g h =
 
 (===) = identical 
 
+{-
 identical2 :: CG -> CG -> Bool
 identical2 g h = 
 	length gl == length hl && length gr == length hr
@@ -256,6 +257,7 @@ identical2 g h =
 	      gr = rightOptions g
 	      hl = leftOptions h
 	      hr = rightOptions h 
+-}
 
 --- Classifications ---
 
@@ -270,6 +272,15 @@ is_number g =
 --
 -- canonicalize might be inefficient here. But it's necessary since 
 -- e.g. {0, * |} = 1 is a number although * is not a number.
+
+-- Given a game g, returns True if g is impartial.
+-- g is impartial if both players have the same options and all of them are impartial.
+is_impartial :: CG -> Bool
+is_impartial g =
+     length gls == length grs 
+     && all (`elem` grs) gls       -- for every gl in gls, there exists gr in grs such that gl=gr
+     && all is_impartial gls && all is_impartial grs
+  where (CG (gls, grs)) = canonicalize g
 
 {-
    Given a game g in canonical form, returns True if g is all-small.
