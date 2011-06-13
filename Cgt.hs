@@ -139,6 +139,7 @@ identical g h =
 
 (===) = identical 
 
+{-
 identical2 :: CG -> CG -> Bool
 identical2 g h = 
 	length gl == length hl && length gr == length hr &&
@@ -148,7 +149,7 @@ identical2 g h =
 	      gr = rightOptions g
 	      hl = leftOptions h
 	      hr = rightOptions h 
-
+-}
 
 ------- Canonical forms -------
 
@@ -277,12 +278,17 @@ all_small (CG (ls, rs)) =
 	  (not $ null ls) && (not $ null rs) &&
 	  all all_small (ls) && all all_small (rs)
 
+--- Some simple games  ---
 z = zero
-um = CG ([z], [])
-mum = neg um
-swing = CG ([um], [mum])
+one = CG ([z], [])
+two = CG ([one], [])
+minusOne = neg one
+swing = CG ([one], [minusOne])    -- = {1|-1}
 star = CG ([z], [z])
-seila = CG ([z, star], [])
+-- these are equal to zero, one and two, though not in canonical form.
+zero' = CG ([star], [star])
+one' = CG ([z, star], [])    
+two' = CG ([z, one], [])
 	
 
 
