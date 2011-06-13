@@ -5,6 +5,7 @@ module Cgt ( CG, show ) where
 
 -- import Data.List (find, intercalate)
 import Data.List
+import Misc
 
 {-
     Combinatorial Games
@@ -42,7 +43,6 @@ data CG  = CG ([CG], [CG])
 
 -- at the moment this show "pretty prints" 0 
 -- and star but not other numbers or "up" and "down".
-
 gshow :: CG -> String
 gshow g
 	| g === zero = "0"
@@ -53,8 +53,6 @@ gshow' (CG (left, right)) =
 		where lshow = intercalate ", " . map gshow
 
 instance Show CG where show = gshow
-
-zero = CG ([], [])
 
 leftOptions :: CG -> [CG]
 leftOptions (CG (left, _)) = left
@@ -126,7 +124,8 @@ greater g h = h `less` g
 confused :: CG -> CG -> Bool
 confused g h = (not (g `less_eq` h)) && (not (h `less_eq` g))
 
-
+-- Given games g and h, returns True if g and h are identical, i.e., have exactly the same form.
+-- Note that, in general, we can have g=h but g and h not identical.
 identical :: CG -> CG -> Bool
 identical g h = 
 	length gl == length hl && length gr == length hr &&
@@ -139,21 +138,19 @@ identical g h =
 
 (===) = identical 
 
-{-
 identical2 :: CG -> CG -> Bool
 identical2 g h = 
 	length gl == length hl && length gr == length hr &&
-	(all $ uncurry identical2 $ zip gl hl) &&
-	(all $ uncurry identical2 $ zip gr hr)
+	(all (uncurry identical2) $ zip gl hl) &&
+	(all (uncurry identical2) $ zip gr hr)
   	where gl = leftOptions g
 	      gr = rightOptions g
 	      hl = leftOptions h
 	      hr = rightOptions h 
--}
 
 ------- Canonical forms -------
 
--- Takes a game g and returns True if g is in canonical form
+-- Given a game g, returns True if g is in canonical form.
 canonical :: CG -> Bool
 canonical g = 
 	let ls = leftOptions g 
@@ -166,20 +163,21 @@ canonical g =
 --      (ii) ls and rs are antichains or, equivalently, there are no dominated options
 --      (iii) there are no reversible options
 
--- Takes a game g and returns the canonical form of g.
+-- Given a game g, returns the canonical form of g.
 -- The canonical form of a game g is the game equal to g that has no dominated options
 -- and no reversible options.
 canonicalize :: CG -> CG
--- canonicalize CG ([], []) = CG ([], [])
 canonicalize g =
 	let ls = map canonicalize $ del_l_dominated $ leftOptions g
 	    rs = map canonicalize $ del_r_dominated $ rightOptions g 
 	    ls' = concatMap (l_bypass_reversible g) ls
 	    rs' = concatMap (r_bypass_reversible g) rs in
 	CG (ls', rs')
+-- This line could be added:
+-- canonicalize CG ([], []) = CG ([], [])
 	
--- in the final clause, using `confused` is inefficient since we already know
--- that gls is not >= gl (or grs is not =< gr)
+-- Given a "dominates" function dom and a game g, returns a game equal to g that has no
+-- dominated options.
 -- dom should be either "greater_eq" or "less_eq" (for left and right options, resp.)
 del_dominated :: (CG -> CG -> Bool) -> [CG] -> [CG]
 del_dominated dom [] = []
@@ -188,12 +186,14 @@ del_dominated dom (g:gs) =
 	then del_dominated dom gs
 	else [g] ++ del_dominated dom gs'
 	where gs' = filter (confused g) gs	
+-- in the final clause, using `confused` is inefficient since we already know
+-- that gls is not >= gl (or grs is not =< gr)
 
 del_l_dominated = del_dominated greater_eq
 del_r_dominated = del_dominated less_eq
 
--- given a game g and a reversible left option gl, returns the bypassed left options of gl
--- if gl is not reversible, returns gl
+-- Given a game g and a reversible left option gl, returns the bypassed left options of gl.
+-- If gl is not reversible, returns gl.
 l_bypass_reversible :: CG -> CG -> [CG]
 l_bypass_reversible g gl =
 	let glrs = rightOptions gl 
@@ -210,21 +210,12 @@ r_bypass_reversible g gr =
 		Nothing -> [gr]
 		Just grl' -> rightOptions grl'
 
--- given a predicate p and a list, returns True if the predicate holds for every 
--- ordered pair in the list, False otherwise.
-all_pairwise :: (a -> a -> Bool) -> [a] -> Bool
-all_pairwise p [] = True
-all_pairwise p [x] = True
-all_pairwise p (x:xs) = 
-	all (p x) xs 
-	&& all (flip p x) xs
-	&& all_pairwise p xs
-
--- redundant? can probably be replaced by mapping l_bypass_reversible over leftOptions,
--- then comparing with leftOptions (whatever is different is reversible, since
--- l_bypass_reversible returns gl if gl is not reversible)
+-- Given a game g, returns the list of reversible left options of g.
 reversible_left_options :: CG -> [CG]
 reversible_left_options g = filter (left_reversible g) (leftOptions g)
+-- Is this redundant? can probably be replaced by mapping l_bypass_reversible over leftOptions,
+-- then comparing with leftOptions (whatever is different is reversible, since
+-- l_bypass_reversible returns gl if gl is not reversible)
 
 -- Given a game g and a left option gl of g, returns True if gl is reversible in g.
 -- (assumes gl is indeed a left option of g)
@@ -256,15 +247,18 @@ sign g
 	| g `confused` zero = "||"	
 	| g `equals` zero = "0"
 	| otherwise = "can't happen"
--- sign g = compare_game g zero
 
--- canonicalize might be inefficient here. But it's necessary since 
--- e.g. {0, * |} = 1 is a number although * is not a number.
+-- Given a game g, returns True if g is a number.
+-- g is a number if every left option is less than every right option.
 is_number :: CG -> Bool
 is_number g =
 	let (CG (ls, rs)) = canonicalize g in
 	  all is_number ls && all is_number rs &&
 	  all (uncurry less) [(gl, gr) | gl <- ls, gr <- rs]
+--        all (\gl -> all (gl `less`) rs) ls
+--
+-- canonicalize might be inefficient here. But it's necessary since 
+-- e.g. {0, * |} = 1 is a number although * is not a number.
 
 {-
    Given a game g in canonical form, returns True if g is all-small.
@@ -279,17 +273,16 @@ all_small (CG (ls, rs)) =
 	  all all_small (ls) && all all_small (rs)
 
 --- Some simple games  ---
+-- these are in canonical form
+zero = CG ([], [])
 z = zero
 one = CG ([z], [])
 two = CG ([one], [])
 minusOne = neg one
 swing = CG ([one], [minusOne])    -- = {1|-1}
 star = CG ([z], [z])
--- these are equal to zero, one and two, though not in canonical form.
+-- these are equal to zero, one and two, though not identical (not in canonical form).
 zero' = CG ([star], [star])
 one' = CG ([z, star], [])    
 two' = CG ([z, one], [])
 	
-
-
-
