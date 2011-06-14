@@ -180,8 +180,8 @@ canonicalize g =
 -- This line could be added:
 -- canonicalize CG ([], []) = CG ([], [])
 	
--- Given a "dominates" function dom and a game g, returns a game equal to g that has no
--- dominated options.
+-- Given a "dominates" function dom and a list of games gs, returns a list of the same games
+-- with no dominated options.
 -- dom should be either "greater_eq" or "less_eq" (for left and right options, resp.)
 del_dominated :: (CG -> CG -> Bool) -> [CG] -> [CG]
 del_dominated dom [] = []
