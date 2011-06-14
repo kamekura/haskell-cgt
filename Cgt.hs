@@ -282,8 +282,8 @@ is_number g =
 -- g is impartial if both players have the same options and all of them are impartial.
 is_impartial :: CG -> Bool
 is_impartial g =
-     length gls == length grs 
-     && all (`elem` grs) gls       -- for every gl in gls, there exists gr in grs such that gl=gr
+     length gls == length grs      -- the sets gls and grs are equal
+     && all (`elem` grs) gls       -- 
      && all is_impartial gls && all is_impartial grs
   where (CG (gls, grs)) = canonicalize g
 
