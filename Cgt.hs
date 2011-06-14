@@ -43,6 +43,8 @@ import Misc
 
 data CG  = CG ([CG], [CG])
 
+instance Show CG where show = gshow
+
 -- at the moment this show "pretty prints" 0 
 -- and star but not other numbers or "up" and "down".
 gshow :: CG -> String
@@ -54,13 +56,13 @@ gshow' (CG (left, right)) =
 	"{" ++ lshow left  ++ " | " ++ lshow right ++ "}"
 		where lshow = intercalate ", " . map gshow
 
-instance Show CG where show = gshow
-
 leftOptions :: CG -> [CG]
 leftOptions (CG (left, _)) = left
 
 rightOptions :: CG -> [CG]
 rightOptions (CG (_, right)) = right
+
+--- Basic game algebra ---
 
 -- The negative of a game is the game with "moves reversed" for each player.
 -- Formally: if G = {L1, ..., Ln | R1, ..., Rn} then -G = {-R1,...,Rn | -L1,..., -Ln)
@@ -297,13 +299,15 @@ all_small (CG (ls, rs)) =
 --- Some simple games  ---
 
 -- these are in canonical form
-zero = CG ([], [])
-z = zero
-one = CG ([z], [])
-two = CG ([one], [])
-minusOne = neg one
-swing = CG ([one], [minusOne])    -- = {1|-1}
-star = CG ([z], [z])
+zero = CG ([], [])                -- {|}
+z = zero                          -- 
+one = CG ([z], [])                -- {0|}
+two = CG ([one], [])              -- {1|}
+minusOne = neg one                -- {|0}  
+swing = CG ([one], [minusOne])    -- {1|-1}
+star = CG ([z], [z])              -- {0|0}
+up =   CG ([z], [star])           -- {0|*}
+down = CG ([star], [z])           -- {*|0}
 -- these are equal to zero, one and two, though not identical (not in canonical form).
 zero' = CG ([star], [star])
 one' = CG ([z, star], [])    
