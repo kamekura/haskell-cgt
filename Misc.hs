@@ -1,6 +1,6 @@
 -- Miscellaneous general functions, not specific to combinatorial games.
 
-module Misc (count, all_pairwise) where
+module Misc (count, all_pairwise, none) where
 
 -- count f xs = length $ filter f xs
 -- count = length . filter
@@ -19,3 +19,7 @@ all_pairwise p (x:xs) =
 	all (p x) xs 
 	&& all (flip p x) xs
 	&& all_pairwise p xs
+
+none :: (a -> Bool) -> [a] -> Bool
+none p = all (not . p)
+

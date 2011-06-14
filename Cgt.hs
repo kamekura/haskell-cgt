@@ -108,8 +108,7 @@ less_eq :: CG -> CG -> Bool
 g `less_eq` h = 
 	let CG (gl, gr) = g 
 	    CG (hl, hr) = h in
-	not (any (h `less_eq`) gl) &&
-	not (any (`less_eq` g) hr)
+	none (h `less_eq`) gl && none (`less_eq` g) hr
 
 greater_eq :: CG -> CG -> Bool
 greater_eq g h = h `less_eq` g
@@ -313,3 +312,4 @@ zero' = CG ([star], [star])
 one' = CG ([z, star], [])    
 two' = CG ([z, one], [])
 	
+
