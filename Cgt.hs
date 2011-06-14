@@ -195,6 +195,8 @@ del_dominated dom (g:gs) =
 
 del_l_dominated = del_dominated greater_eq
 del_r_dominated = del_dominated less_eq
+-- maybe del_l_dominated = nubBy less_eq ?
+-- del_dominated = CG (del_l_dominated ls , del_r_dominated rs)
 
 -- Given a game g and a reversible left option gl, returns the bypassed left options of gl.
 -- If gl is not reversible, returns gl.
@@ -213,13 +215,11 @@ r_bypass_reversible g gr =
 	case grl of 
 		Nothing -> [gr]
 		Just grl' -> rightOptions grl'
+-- There's some (probably unnecessary) overlap among the 3 reversible-options functions (l_bypass_reversible and the next two.
 
 -- Given a game g, returns the list of reversible left options of g.
 reversible_left_options :: CG -> [CG]
 reversible_left_options g = filter (left_reversible g) (leftOptions g)
--- Is this redundant? can probably be replaced by mapping l_bypass_reversible over leftOptions,
--- then comparing with leftOptions (whatever is different is reversible, since
--- l_bypass_reversible returns gl if gl is not reversible)
 
 -- Given a game g and a left option gl of g, returns True if gl is reversible in g.
 -- (assumes gl is indeed a left option of g)
