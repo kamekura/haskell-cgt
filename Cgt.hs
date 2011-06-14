@@ -1,7 +1,10 @@
 -- author: Rafael Caetano dos Santos
 -- license: ?
 
-module Cgt ( CG, show ) where
+module Cgt ( CG, show, leftOptions, rightOptions, neg, plus, minus, equals, less_eq, greater_eq,
+		 less, greater, confused, uncomparable, compare_game, sign, 
+		 canonical, canonicalize, reversible_left_options, reversible_right_options, identical,
+		 is_number, is_impartial, is_all_small, zero) where
 
 -- import Data.List (find, intercalate)
 import Data.List
@@ -138,6 +141,7 @@ compare_game g h
 	| g `confused` h = "||"	
 	| g `equals` h = "="
 	| otherwise = "can't happen"
+-- Could add a type similar to Ord. Last guard should be an error.
 
 sign :: CG -> String
 sign g 
@@ -146,7 +150,7 @@ sign g
 	| g `confused` zero = "||"	
 	| g `equals` zero = "0"
 	| otherwise = "can't happen"
-
+-- The last guard should be an error.
 
 --- Canonical forms ---
 
@@ -289,11 +293,11 @@ is_impartial g =
    both players have moves. In other words, every subgame is either 0
    or a game where both sets of options (Left and Right) are non-empty. 
 -}
-all_small :: CG -> Bool
-all_small (CG ([], [])) = True
-all_small (CG (ls, rs)) = 
+is_all_small :: CG -> Bool
+is_all_small (CG ([], [])) = True
+is_all_small (CG (ls, rs)) = 
 	  not (null ls) && not (null rs) &&
-	  all all_small ls && all all_small rs
+	  all is_all_small ls && all is_all_small rs
 
 --- Some simple games  ---
 
