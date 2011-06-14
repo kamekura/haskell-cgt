@@ -266,6 +266,15 @@ identical2 g h =
 
 --- Classifications ---
 
+{- 
+  TODO: should probably add a type for canonical games, and make the general CG type a sum type.
+  That way, some (or most) functions could be restricted to canonical games, 
+  instead of canonicalizing the argument every time.
+
+  Also: a CG_Number or CG_Rational type, so that numbers can be represented
+  efficiently with existing Haskell types.
+-}
+
 -- Given a game g, returns True if g is a number.
 -- g is a number if every option is a number and every left option is less than every right option.
 is_number :: CG -> Bool
@@ -288,16 +297,17 @@ is_impartial g =
   where (CG (gls, grs)) = canonicalize g
 
 {-
-   Given a game g in canonical form, returns True if g is all-small.
+   Given a game g, returns True if g is all-small.
    A game is all-small if in every non-terminal position, 
    both players have moves. In other words, every subgame is either 0
    or a game where both sets of options (Left and Right) are non-empty. 
 -}
 is_all_small :: CG -> Bool
 is_all_small (CG ([], [])) = True
-is_all_small (CG (ls, rs)) = 
+is_all_small g = 
 	  not (null ls) && not (null rs) &&
 	  all is_all_small ls && all is_all_small rs
+	  	where (CG (ls, rs)) = canonicalize g
 
 --- Some simple games  ---
 
