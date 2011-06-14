@@ -243,7 +243,7 @@ identical g h =
 	      hl = leftOptions h
 	      hr = rightOptions h
 -- This works because the current representation of CG is basically "unary". 
--- It should be changed in case we change the represenation of CG to something more efficient.
+-- It should be changed in case we change the representation of CG into something more efficient.
 
 (===) = identical 
 
