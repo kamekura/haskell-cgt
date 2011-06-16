@@ -4,7 +4,10 @@
 module Cgt ( CG, show, leftOptions, rightOptions, neg, plus, minus, equals, less_eq, greater_eq,
 		 less, greater, confused, uncomparable, compare_game, sign, 
 		 canonical, canonicalize, reversible_left_options, reversible_right_options, identical,
-		 is_number, is_impartial, is_all_small, zero) where
+		 is_number, is_impartial, is_all_small, zero, one, (+)) where
+
+import qualified Prelude as P
+import Prelude hiding ((+))
 
 -- import Data.List (find, intercalate)
 import Data.List
@@ -44,7 +47,7 @@ import Misc
    though that could change in the future.
 -}
 
-data CG  = CG ([CG], [CG])
+data CG  = CG { leftOptions :: [CG], rightOptions :: [CG] }
 
 instance Show CG where show = gshow
 
@@ -55,22 +58,16 @@ gshow g
 	| g === zero = "0"
 	| g === star = "*"
 	| otherwise = gshow' g
-gshow' (CG (left, right)) = 
+gshow' (CG left right) = 
 	"{" ++ lshow left  ++ " | " ++ lshow right ++ "}"
 		where lshow = intercalate ", " . map gshow
-
-leftOptions :: CG -> [CG]
-leftOptions (CG (left, _)) = left
-
-rightOptions :: CG -> [CG]
-rightOptions (CG (_, right)) = right
 
 --- Basic game algebra ---
 
 -- The negative of a game is the game with "moves reversed" for each player.
 -- Formally: if G = {L1, ..., Ln | R1, ..., Rn} then -G = {-R1,...,Rn | -L1,..., -Ln)
 neg :: CG -> CG
-neg (CG (left, right)) = CG (map neg right, map neg left)
+neg (CG left right) = CG (map neg right) (map neg left)
 
 {- The sum of games G and H is a game. In the sum game, each player can select a component
    (G or H) and make a move in the component. The other component remains unaltered.
@@ -87,15 +84,15 @@ plus :: CG -> CG -> CG
 -- plus g Zero = g
 -- plus Zero h = h
 g `plus` h = 
-	let CG (gl, gr) = g
-	    CG (hl, hr) = h in
-	canonicalize $ CG ( map (plus g) hl ++ map (plus h) gl, 
-	                    map (plus g) hr ++ map (plus h) gr ) 
+	let CG gl gr = g
+	    CG hl hr = h in
+	canonicalize $ CG (map (plus g) hl ++ map (plus h) gl)
+	                  (map (plus g) hr ++ map (plus h) gr) 
 
 -- Is there a convenient way to use `+` instead of `plus`?
 -- Note that games are not always numbers and cannot be an instance of Num.
 -- (+) :: CG -> CG -> CG
--- (+) = plus
+(+) = plus
 
 g `minus` h = g `plus` neg h
 
@@ -109,8 +106,8 @@ g `minus` h = g `plus` neg h
 
 less_eq :: CG -> CG -> Bool
 g `less_eq` h = 
-	let CG (gl, gr) = g 
-	    CG (hl, hr) = h in
+	let CG gl gr = g 
+	    CG hl hr = h in
 	none (h `less_eq`) gl && none (`less_eq` g) hr
 
 greater_eq :: CG -> CG -> Bool
@@ -176,7 +173,7 @@ canonicalize g =
 	    rs = map canonicalize $ del_r_dominated $ rightOptions g 
 	    ls' = concatMap (l_bypass_reversible g) ls
 	    rs' = concatMap (r_bypass_reversible g) rs in
-	CG (ls', rs')
+	CG ls' rs'
 -- This line could be added:
 -- canonicalize CG ([], []) = CG ([], [])
 	
@@ -279,7 +276,7 @@ identical2 g h =
 -- g is a number if every option is a number and every left option is less than every right option.
 is_number :: CG -> Bool
 is_number g =
-	let (CG (ls, rs)) = canonicalize g in
+	let CG ls rs = canonicalize g in
 	  all is_number ls && all is_number rs &&
 	  all (uncurry less) [(gl, gr) | gl <- ls, gr <- rs]
 --        all (\gl -> all (gl `less`) rs) ls
@@ -294,7 +291,7 @@ is_impartial g =
      length gls == length grs      -- the sets gls and grs are equal
      && all (`elem` grs) gls       -- 
      && all is_impartial gls && all is_impartial grs
-  where (CG (gls, grs)) = canonicalize g
+  where CG gls grs = canonicalize g
 
 {-
    Given a game g, returns True if g is all-small.
@@ -303,27 +300,25 @@ is_impartial g =
    or a game where both sets of options (Left and Right) are non-empty. 
 -}
 is_all_small :: CG -> Bool
-is_all_small (CG ([], [])) = True
+is_all_small (CG [] []) = True
 is_all_small g = 
 	  not (null ls) && not (null rs) &&
 	  all is_all_small ls && all is_all_small rs
-	  	where (CG (ls, rs)) = canonicalize g
+	  	where CG ls rs = canonicalize g
 
 --- Some simple games  ---
 
 -- these are in canonical form
-zero = CG ([], [])                -- {|}
-z = zero                          -- 
-one = CG ([z], [])                -- {0|}
-two = CG ([one], [])              -- {1|}
-minusOne = neg one                -- {|0}  
-swing = CG ([one], [minusOne])    -- {1|-1}
-star = CG ([z], [z])              -- {0|0}
-up =   CG ([z], [star])           -- {0|*}
-down = CG ([star], [z])           -- {*|0}
+zero = CG [] []                -- {|}
+z = zero                       -- 
+one = CG [z] []                -- {0|}
+two = CG [one] []              -- {1|}
+minusOne = neg one             -- {|0}  
+swing = CG [one] [minusOne]    -- {1|-1}
+star = CG [z] [z]              -- {0|0}
+up =   CG [z] [star]           -- {0|*}
+down = CG [star] [z]           -- {*|0}
 -- these are equal to zero, one and two, though not identical (not in canonical form).
-zero' = CG ([star], [star])
-one' = CG ([z, star], [])    
-two' = CG ([z, one], [])
-	
-
+zero' = CG [star] [star]
+one' = CG [z, star] []    
+two' = CG [z, one] []
