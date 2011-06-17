@@ -168,32 +168,32 @@ canonical g =
 -- The canonical form of a game g is the game equal to g that has no dominated options
 -- and no reversible options.
 canonicalize :: CG -> CG
+canonicalize (CG [] []) = CG [] []
 canonicalize g =
-	let ls = map canonicalize $ del_l_dominated $ leftOptions g
-	    rs = map canonicalize $ del_r_dominated $ rightOptions g 
-	    ls' = concatMap (l_bypass_reversible g) ls
-	    rs' = concatMap (r_bypass_reversible g) rs in
-	CG ls' rs'
--- This line could be added:
--- canonicalize CG ([], []) = CG ([], [])
+	let (CG ls rs) = del_dominated g
+	    ls'  = map canonicalize ls
+	    rs'  = map canonicalize rs
+	    ls'' = concatMap (l_bypass_reversible g) ls'
+	    rs'' = concatMap (r_bypass_reversible g) rs' in
+	CG ls'' rs''
 	
 -- Given a "dominates" function dom and a list of games gs, returns a list of the same games
 -- with no dominated options.
 -- dom should be either "greater_eq" or "less_eq" (for left and right options, resp.)
-del_dominated :: (CG -> CG -> Bool) -> [CG] -> [CG]
-del_dominated dom [] = []
-del_dominated dom (g:gs) =
-	if any (`dom` g) gs
-	then del_dominated dom gs
-	else g : del_dominated dom gs'
-          where gs' = filter (confused g) gs	
+del_dominated_by :: (CG -> CG -> Bool) -> [CG] -> [CG]
+del_dominated_by dom [] = []
+del_dominated_by dom (g:gs) 
+	| any (`dom` g) gs = del_dominated_by dom gs
+	| otherwise  = g : del_dominated_by dom gs'
+        	where gs' = filter (confused g) gs	
+
 -- in the final clause, using `confused` is inefficient since we already know
 -- that gls is not >= gl (or grs is not =< gr)
 
-del_l_dominated = del_dominated greater_eq
-del_r_dominated = del_dominated less_eq
--- maybe del_l_dominated = nubBy less_eq ?
--- del_dominated = CG (del_l_dominated ls , del_r_dominated rs)
+del_dominated :: CG -> CG
+del_dominated (CG ls rs) = CG (del_left_dominated ls) (del_right_dominated rs) where
+			del_left_dominated = del_dominated_by greater_eq
+			del_right_dominated = del_dominated_by less_eq
 
 -- Given a game g and a reversible left option gl, returns the bypassed left options of gl.
 -- If gl is not reversible, returns gl.
